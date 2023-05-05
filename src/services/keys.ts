@@ -5,3 +5,4 @@ export const itemsKey = (itemId: String) => `items#${itemId}`
 export const usernamesKey = () => 'usernames'
 export const usernamesUniqueKey = () => 'usernames:unique'
 export const userLikesKey = (userId: String) => `user:likes#${userId}`
+export const itemsByViewsKey = () => `items:views`
