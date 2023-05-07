@@ -3,7 +3,7 @@ import { client } from "$services/redis";
 import { serialize } from "$services/queries/items/serialize";
 import { genId } from "$services/utils";
 import { deserialize } from "$services/queries/items/deserialize";
-import { itemsKey, itemsByViewsKey } from "$services/keys";
+import { itemsKey, itemsByViewsKey, itemsByEndingAtKey } from "$services/keys";
 
 export const getItem = async (id: string) => {
     const item = await client.hGetAll(itemsKey(id))
@@ -37,7 +37,8 @@ export const createItem = async (attrs: CreateItemAttrs, userId: string) => {
 
     await Promise.all([
         client.hSet(itemsKey(itemId), serialized),
-        client.zAdd(itemsByViewsKey(), { value: itemId, score: 0 })
+        client.zAdd(itemsByViewsKey(), { value: itemId, score: 0 }),
+        client.zAdd(itemsByEndingAtKey(), { value: itemId, score: attrs.endingAt.toMillis() })
     ])
 
     return itemId
