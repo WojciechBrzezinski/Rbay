@@ -9,3 +9,5 @@ export const userLikesKey = (userId: String) => `user:likes#${userId}`
 export const itemsKey = (itemId: String) => `items#${itemId}`
 export const itemsByViewsKey = () => `items:views`
 export const itemsByEndingAtKey = () => `items:endingAt`
+export const itemsViewsKey = (itemId: String) => `items:views#${itemId}`
+export const bidHistoryKey = (itemId: String) => `history#${itemId}`
