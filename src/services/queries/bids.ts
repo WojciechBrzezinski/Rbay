@@ -1,13 +1,11 @@
 import type { CreateBidAttrs, Bid } from '$services/types';
-import { client } from "$services/redis";
+import { client, withLock } from "$services/redis";
 import { bidHistoryKey, itemsByEndingAtKey, itemsKey } from "$services/keys";
 import { DateTime } from "luxon";
 import { getItem } from "$services/queries/items";
 
 export const createBid = async (attrs: CreateBidAttrs) => {
-    return client.executeIsolated(async (isolatedClient) => {
-        await isolatedClient.watch(itemsKey(attrs.itemId))
-
+    return withLock(attrs.itemId, async (lockedClient: typeof client) => {
         const item = await getItem(attrs.itemId)
 
         if (!item) {
@@ -27,15 +25,14 @@ export const createBid = async (attrs: CreateBidAttrs) => {
             attrs.createdAt.toMillis()
         )
 
-        return isolatedClient
-            .multi()
-            .rPush(bidHistoryKey(attrs.itemId), serialized)
-            .hSet(itemsKey(item.id), {
+        return Promise.all([
+            lockedClient.rPush(bidHistoryKey(attrs.itemId), serialized),
+            lockedClient.hSet(itemsKey(item.id), {
                 bids: item.bids + 1,
                 price: attrs.amount
-            })
-            .zAdd(itemsByEndingAtKey(), { value: attrs.itemId, score: attrs.amount })
-            .exec()
+            }),
+            lockedClient.zAdd(itemsByEndingAtKey(), { value: attrs.itemId, score: attrs.amount })
+        ])
     })
 };
 
